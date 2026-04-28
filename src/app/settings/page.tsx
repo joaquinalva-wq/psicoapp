@@ -269,7 +269,7 @@ export default function SettingsPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-blue-800">Tu perfil público</p>
-                <p className="text-xs text-blue-600 mt-0.5">psicoapp1.netlify.app/p/{slug}</p>
+                <p className="text-xs text-blue-600 mt-0.5">psicoapp-production.up.railway.app/p/{slug}</p>
               </div>
               <a href={`/p/${slug}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
