@@ -197,7 +197,7 @@ Para que Laura pueda acceder desde cualquier dispositivo:
 git init
 git add .
 git commit -m "PsicoApp"
-git remote add origin https://github.com/TU_USUARIO/psicoapp.git
+git remote add origin https://github.com/joaquinalva-wq/psicoapp.git
 git push -u origin main
 ```
 
@@ -279,7 +279,7 @@ El sistema envía recordatorios 24hs antes de cada turno.
 ## COMANDOS ÚTILES
 
 ```bash
-npm run dev      # Correr localmente en http://localhost:3000
+npm run dev      # Correr localmente en vercel --prod
 npm run build    # Compilar para producción
 npm run lint     # Verificar errores de código
 ```
