@@ -62,7 +62,14 @@ export default function Sidebar() {
       {/* Header EPSI */}
       <div className="px-4 py-4 border-b border-slate-100">
         <Link href="/" className="flex items-center gap-2.5 mb-3">
-          <img src="/epsi-logo.png" alt="EPSI" className="h-8 w-auto" />
+          {/* Logo sobre fondo blanco: sin filtro, con mix-blend-mode multiply
+              para que el fondo blanco del JPG sea transparente visualmente */}
+          <img
+            src="/epsi-logo.jpg"
+            alt="EPSI"
+            className="h-8 w-auto"
+            style={{ mixBlendMode: 'multiply' }}
+          />
           <div>
             <div className="text-xs font-bold text-slate-800 leading-none">EPSI</div>
             <div className="text-[10px] text-slate-400">Esp. Psicológico Integral</div>
@@ -75,9 +82,11 @@ export default function Sidebar() {
             {psych.logo_url
               ? <img src={psych.logo_url} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
               : (
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                  style={{ background: brandColor }}>
-                  {psych.full_name?.split(' ').map((w: string) => w[0]).slice(0,2).join('')}
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                  style={{ background: brandColor }}
+                >
+                  {psych.full_name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
                 </div>
               )
             }

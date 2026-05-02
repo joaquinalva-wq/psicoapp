@@ -27,13 +27,21 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex" style={{ background: '#f0f4ec' }}>
-      {/* Panel izquierdo — branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12"
-        style={{ background: 'linear-gradient(135deg, #2d5016 0%, #3d6b1e 100%)' }}>
-        <img src="/epsi-logo.png" alt="EPSI" className="w-36 h-auto mb-6"
-          style={{ filter: 'brightness(0) invert(1)' }} />
-        <h1 className="text-3xl text-white text-center mb-3"
-          style={{ fontFamily: 'DM Serif Display, Georgia, serif' }}>
+      {/* Panel izquierdo — branding (fondo verde, logo con filtro blanco) */}
+      <div
+        className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12"
+        style={{ background: 'linear-gradient(135deg, #2d5016 0%, #3d6b1e 100%)' }}
+      >
+        <img
+          src="/epsi-logo.jpg"
+          alt="EPSI"
+          className="w-36 h-auto mb-6"
+          style={{ filter: 'brightness(0) invert(1)' }}
+        />
+        <h1
+          className="text-3xl text-white text-center mb-3"
+          style={{ fontFamily: 'DM Serif Display, Georgia, serif' }}
+        >
           Espacio Psicológico Integral
         </h1>
         <p className="text-green-200 text-center text-sm leading-relaxed max-w-xs">
@@ -59,8 +67,14 @@ export default function LoginPage() {
       {/* Panel derecho — formulario */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
+
+          {/* Logo mobile (fondo claro, SIN filtro) */}
           <div className="lg:hidden mb-8 text-center">
-            <img src="/epsi-logo.png" alt="EPSI" className="h-16 w-auto mx-auto mb-3" />
+            <img
+              src="/epsi-logo.jpg"
+              alt="EPSI"
+              className="h-16 w-auto mx-auto mb-3"
+            />
             <p className="text-slate-500 text-sm">Espacio Psicológico Integral</p>
           </div>
 
@@ -71,17 +85,31 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="tu@email.com" required autoFocus />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  required
+                  autoFocus
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Contraseña</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••" required />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
               </div>
-              <button type="submit" disabled={loading}
+              <button
+                type="submit"
+                disabled={loading}
                 className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-opacity disabled:opacity-50 mt-2"
-                style={{ background: '#2d5016' }}>
+                style={{ background: '#2d5016' }}
+              >
                 {loading ? 'Ingresando...' : 'Ingresar al sistema'}
               </button>
             </form>
@@ -96,9 +124,17 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-xs text-slate-400 mt-6">
-            <Link href="/turnos" className="hover:underline">← Volver al portal de turnos</Link>
+          {/* Link portal — con color visible */}
+          <p className="text-center text-xs mt-6">
+            <Link
+              href="/turnos"
+              className="hover:underline font-medium"
+              style={{ color: '#2d5016' }}
+            >
+              ← Volver al portal de turnos
+            </Link>
           </p>
+
         </div>
       </div>
     </div>
