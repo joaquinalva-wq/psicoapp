@@ -7,7 +7,7 @@ export default function HomePage() {
       <nav className="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/epsi-logo.png" alt="EPSI" className="h-10 w-auto" />
+            <img src="/epsi-logo.jpg" alt="EPSI" className="h-10 w-auto" />
             <div>
               <p className="font-semibold text-slate-800 text-sm leading-none">EPSI</p>
               <p className="text-xs text-slate-400">Espacio Psicológico Integral</p>
@@ -27,7 +27,7 @@ export default function HomePage() {
 
       <section style={{ background: 'linear-gradient(135deg, #2d5016 0%, #3d6b1e 60%, #4a7a22 100%)' }} className="py-20 px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <img src="/epsi-logo.png" alt="EPSI" className="h-24 w-auto mx-auto mb-6" style={{ filter: 'brightness(0) invert(1)' }} />
+          <img src="/epsi-logo.jpg" alt="EPSI" className="h-24 w-auto mx-auto mb-6" style={{ filter: 'brightness(0) invert(1)' }} />
           <h1 className="text-4xl text-white mb-4 font-light" style={{ fontFamily: 'DM Serif Display, Georgia, serif' }}>
             Espacio Psicológico Integral
           </h1>
@@ -88,7 +88,7 @@ export default function HomePage() {
       <footer style={{ background: '#2d5016' }} className="py-8 px-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between text-xs text-green-200">
           <div className="flex items-center gap-3">
-            <img src="/epsi-logo.png" alt="EPSI" className="h-6 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
+            <img src="/epsi-logo.jpg" alt="EPSI" className="h-6 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
             <span>EPSI — Espacio Psicológico Integral · Campana, Buenos Aires</span>
           </div>
           <span>© 2026</span>

@@ -37,7 +37,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-8" style={{ background: '#f0f4ec' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src="/epsi-logo.png" alt="EPSI" className="h-16 w-auto mx-auto mb-3" />
+          <img src="/epsi-logo.jpg" alt="EPSI" className="h-16 w-auto mx-auto mb-3" />
           <p className="text-slate-500 text-sm">Espacio Psicológico Integral</p>
         </div>
 
