@@ -5,18 +5,26 @@ import { es } from 'date-fns/locale'
 import Link from 'next/link'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { AppointmentStatus } from '@/types'
-import { CalendarDays, Users, AlertCircle, TrendingUp, Plus, ArrowRight } from 'lucide-react'
+import { CalendarDays, Users, AlertCircle, TrendingUp, Plus, ArrowRight, Clock } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: psych } = await supabase.from('psychologists').select('*').eq('user_id', user.id).single()
+  const { data: psych } = await supabase
+    .from('psychologists')
+    .select('id, full_name, profession, brand_color')
+    .eq('user_id', user.id)
+    .single()
   if (!psych) redirect('/settings')
 
   const now = new Date()
-  const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7)
+  const weekEnd = new Date(now)
+  weekEnd.setDate(now.getDate() + 7)
+
+  const todayStart = format(now, 'yyyy-MM-dd') + 'T00:00:00'
+  const todayEnd   = format(now, 'yyyy-MM-dd') + 'T23:59:59'
 
   const [
     { data: todayApts },
@@ -26,26 +34,39 @@ export default async function DashboardPage() {
     { data: recentNotes },
     { data: birthdays },
   ] = await Promise.all([
-    supabase.from('appointments').select('*, patient:patients(*)')
+    supabase.from('appointments')
+      .select('id, scheduled_at, duration_minutes, modality, status, patient:patients(id, first_name, last_name)')
       .eq('psychologist_id', psych.id)
-      .gte('scheduled_at', format(now, 'yyyy-MM-dd') + 'T00:00:00')
-      .lte('scheduled_at', format(now, 'yyyy-MM-dd') + 'T23:59:59')
+      .gte('scheduled_at', todayStart)
+      .lte('scheduled_at', todayEnd)
       .not('status', 'in', '("cancelled_by_patient","cancelled_by_psychologist")')
       .order('scheduled_at'),
-    supabase.from('appointments').select('*, patient:patients(*)')
+    supabase.from('appointments')
+      .select('id, scheduled_at, duration_minutes, modality, status, patient:patients(id, first_name, last_name)')
       .eq('psychologist_id', psych.id)
-      .gt('scheduled_at', format(now, 'yyyy-MM-dd') + 'T23:59:59')
+      .gt('scheduled_at', todayEnd)
       .lte('scheduled_at', weekEnd.toISOString())
       .not('status', 'in', '("cancelled_by_patient","cancelled_by_psychologist")')
-      .order('scheduled_at').limit(5),
-    supabase.from('patients').select('*', { count: 'exact', head: true })
-      .eq('psychologist_id', psych.id).eq('is_active', true),
-    supabase.from('appointments').select('*', { count: 'exact', head: true })
-      .eq('psychologist_id', psych.id).eq('status', 'pending_confirmation'),
-    supabase.from('session_notes').select('*, patient:patients(*)')
-      .eq('psychologist_id', psych.id).order('created_at', { ascending: false }).limit(3),
-    supabase.from('patients').select('first_name, last_name, date_of_birth')
-      .eq('psychologist_id', psych.id).eq('is_active', true).not('date_of_birth', 'is', null),
+      .order('scheduled_at')
+      .limit(5),
+    supabase.from('patients')
+      .select('*', { count: 'exact', head: true })
+      .eq('psychologist_id', psych.id)
+      .eq('is_active', true),
+    supabase.from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('psychologist_id', psych.id)
+      .eq('status', 'pending_confirmation'),
+    supabase.from('session_notes')
+      .select('id, session_date, consultation_reason, patient:patients(first_name, last_name)')
+      .eq('psychologist_id', psych.id)
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabase.from('patients')
+      .select('first_name, date_of_birth')
+      .eq('psychologist_id', psych.id)
+      .eq('is_active', true)
+      .not('date_of_birth', 'is', null),
   ])
 
   const todayBirthdays = (birthdays || []).filter(p => {
@@ -56,83 +77,165 @@ export default async function DashboardPage() {
 
   const greeting = now.getHours() < 12 ? 'Buenos días' : now.getHours() < 19 ? 'Buenas tardes' : 'Buenas noches'
   const firstName = psych.full_name?.split(' ').find((w: string) => !w.startsWith('Dr')) || psych.full_name
+  const brandColor = psych.brand_color || '#2d5016'
+  const totalWeek = (todayApts?.length ?? 0) + (upcomingApts?.length ?? 0)
 
   return (
-    <div className="p-8 animate-fade-in max-w-5xl">
-      {/* Header */}
-      <div className="mb-7">
-        <h1 className="text-2xl text-slate-800 mb-0.5">{greeting}, {firstName}</h1>
-        <p className="text-sm text-slate-500 capitalize">
-          {format(now, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
-        </p>
+    <div className="p-8 animate-fade-in" style={{ maxWidth: 1000 }}>
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <p className="text-sm mb-1" style={{ color: 'var(--text-tertiary)' }}>
+            {format(now, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
+          </p>
+          <h1 className="text-3xl font-light" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+            {greeting}, <span style={{ color: brandColor }}>{firstName}</span>
+          </h1>
+        </div>
+        <Link href="/appointments/new" className="btn-primary">
+          <Plus size={14} /> Nuevo turno
+        </Link>
       </div>
 
-      {/* Alert: pendientes */}
-      {(pendingCount || 0) > 0 && (
-        <Link href="/appointments" className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 hover:bg-amber-100 transition-colors group">
-          <AlertCircle size={16} className="text-amber-600 flex-shrink-0" />
-          <p className="text-sm text-amber-800">
-            <strong>{pendingCount} {pendingCount === 1 ? 'turno' : 'turnos'}</strong> pendiente{pendingCount === 1 ? '' : 's'} de confirmación
-          </p>
-          <ArrowRight size={14} className="text-amber-500 ml-auto group-hover:translate-x-0.5 transition-transform" />
-        </Link>
-      )}
+      {/* ── Alertas ── */}
+      <div className="space-y-3 mb-8">
+        {(pendingCount || 0) > 0 && (
+          <Link href="/appointments"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors group"
+            style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: '#fef3c7' }}>
+              <AlertCircle size={15} style={{ color: '#d97706' }} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium" style={{ color: '#92400e' }}>
+                {pendingCount} turno{pendingCount !== 1 ? 's' : ''} pendiente{pendingCount !== 1 ? 's' : ''} de confirmación
+              </p>
+              <p className="text-xs" style={{ color: '#b45309' }}>Hacé click para revisar</p>
+            </div>
+            <ArrowRight size={14} style={{ color: '#d97706' }}
+              className="group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
 
-      {/* Birthdays */}
-      {todayBirthdays.length > 0 && (
-        <div className="flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 mb-6">
-          <span className="text-base">🎂</span>
-          <p className="text-sm text-violet-800">
-            Cumpleaños hoy: <strong>{todayBirthdays.map(p => p.first_name).join(', ')}</strong>
+        {todayBirthdays.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+            style={{ background: '#f5f3ff', borderColor: '#ddd6fe' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
+              style={{ background: '#ede9fe' }}>
+              🎂
+            </div>
+            <p className="text-sm font-medium" style={{ color: '#5b21b6' }}>
+              Cumpleaños hoy: {todayBirthdays.map(p => p.first_name).join(', ')}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        {/* Stat principal — turnos hoy */}
+        <div className="col-span-1 rounded-xl p-5 text-white relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${brandColor} 0%, #3d6b1e 100%)` }}>
+          <div className="absolute right-4 top-4 opacity-20">
+            <CalendarDays size={40} />
+          </div>
+          <p className="text-xs font-medium uppercase tracking-wide opacity-80 mb-3">Turnos hoy</p>
+          <p className="text-4xl font-light mb-1">{todayApts?.length ?? 0}</p>
+          <p className="text-xs opacity-70">
+            {todayApts?.length
+              ? `Próximo: ${format(new Date(todayApts[0].scheduled_at), 'HH:mm')} hs`
+              : 'Sin turnos programados'}
           </p>
         </div>
-      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-7">
-        {[
-          { label: 'Turnos hoy', value: todayApts?.length ?? 0, sub: todayApts?.length ? `Próx: ${format(new Date(todayApts[0].scheduled_at), 'HH:mm')} hs` : 'Sin turnos', icon: CalendarDays, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Esta semana', value: (todayApts?.length ?? 0) + (upcomingApts?.length ?? 0), sub: 'turnos programados', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Pacientes activos', value: totalPatients ?? 0, sub: 'en tratamiento', icon: Users, color: 'text-violet-600', bg: 'bg-violet-50' },
-          { label: 'Sin confirmar', value: pendingCount ?? 0, sub: 'requieren atención', icon: AlertCircle, color: pendingCount ? 'text-amber-600' : 'text-slate-400', bg: pendingCount ? 'bg-amber-50' : 'bg-slate-50' },
-        ].map(s => (
-          <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">{s.label}</p>
-              <div className={`w-7 h-7 rounded-lg ${s.bg} flex items-center justify-center`}>
-                <s.icon size={13} className={s.color} />
-              </div>
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Esta semana</p>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#d1fae5' }}>
+              <TrendingUp size={13} style={{ color: '#059669' }} />
             </div>
-            <p className="text-3xl font-light text-slate-800">{s.value}</p>
-            <p className="text-xs text-slate-400 mt-1">{s.sub}</p>
           </div>
-        ))}
+          <p className="text-3xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>{totalWeek}</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>turnos programados</p>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Pacientes</p>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#ede9fe' }}>
+              <Users size={13} style={{ color: '#7c3aed' }} />
+            </div>
+          </div>
+          <p className="text-3xl font-light mb-1" style={{ color: 'var(--text-primary)' }}>{totalPatients ?? 0}</p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>activos en tratamiento</p>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>Sin confirmar</p>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: pendingCount ? '#fef3c7' : '#f1f5f9' }}>
+              <AlertCircle size={13} style={{ color: pendingCount ? '#d97706' : '#94a3b8' }} />
+            </div>
+          </div>
+          <p className="text-3xl font-light mb-1" style={{ color: pendingCount ? '#d97706' : 'var(--text-primary)' }}>
+            {pendingCount ?? 0}
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>requieren atención</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
-        {/* Today's appointments */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-800">Turnos de hoy</h2>
-            <Link href="/appointments/new" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
-              <Plus size={12} /> Nuevo
+      {/* ── Contenido principal ── */}
+      <div className="grid gap-5" style={{ gridTemplateColumns: '1fr 1fr' }}>
+
+        {/* Turnos de hoy */}
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Turnos de hoy</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {format(now, "d 'de' MMMM", { locale: es })}
+              </p>
+            </div>
+            <Link href="/appointments/new"
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              style={{ color: brandColor, background: 'var(--epsi-green-pale)' }}>
+              <Plus size={12} /> Agregar
             </Link>
           </div>
+
           {!todayApts?.length ? (
-            <div className="px-5 py-10 text-center text-sm text-slate-400">No hay turnos para hoy</div>
+            <div className="px-5 py-12 text-center">
+              <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center"
+                style={{ background: 'var(--surface-raised)' }}>
+                <Clock size={20} style={{ color: 'var(--text-tertiary)' }} />
+              </div>
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Sin turnos para hoy</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Disfrutá el día libre 🌿</p>
+            </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
               {todayApts.map((apt: any) => (
-                <Link key={apt.id} href={`/appointments/${apt.id}`}
-                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors">
-                  <div className="text-center w-10">
-                    <div className="text-[11px] text-slate-400 uppercase">{format(new Date(apt.scheduled_at), 'HH:mm')}</div>
+                <Link key={apt.id} href={`/appointments/${apt.id}`} className="list-row">
+                  {/* Hora */}
+                  <div className="flex-shrink-0 text-center w-12">
+                    <div className="text-xs font-semibold" style={{ color: brandColor }}>
+                      {format(new Date(apt.scheduled_at), 'HH:mm')}
+                    </div>
+                    <div className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>hs</div>
                   </div>
+                  {/* Separador */}
+                  <div className="w-px h-8 flex-shrink-0" style={{ background: 'var(--border)' }} />
+                  {/* Paciente */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                       {apt.patient?.first_name} {apt.patient?.last_name}
                     </p>
-                    <p className="text-xs text-slate-400">{apt.duration_minutes} min · {apt.modality}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                      {apt.duration_minutes} min · {apt.modality}
+                    </p>
                   </div>
                   <StatusBadge status={apt.status as AppointmentStatus} />
                 </Link>
@@ -141,31 +244,42 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Upcoming + recent notes */}
+        {/* Columna derecha */}
         <div className="space-y-5">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-800">Próximos turnos</h2>
-              <Link href="/calendar" className="text-xs text-blue-600 hover:underline">Ver calendario</Link>
+
+          {/* Próximos turnos */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Próximos turnos</h2>
+              <Link href="/calendar" className="text-xs font-medium hover:underline" style={{ color: brandColor }}>
+                Ver calendario →
+              </Link>
             </div>
             {!upcomingApts?.length ? (
-              <div className="px-5 py-8 text-center text-sm text-slate-400">Sin turnos próximos</div>
+              <div className="px-5 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Sin turnos en los próximos 7 días
+              </div>
             ) : (
-              <div className="divide-y divide-slate-100">
-                {upcomingApts.slice(0, 3).map((apt: any) => (
-                  <Link key={apt.id} href={`/appointments/${apt.id}`}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
-                    <div className="w-10 text-center">
-                      <div className="text-[10px] text-slate-400 uppercase">
-                        {isToday(new Date(apt.scheduled_at)) ? 'hoy' : isTomorrow(new Date(apt.scheduled_at)) ? 'mañana' : format(new Date(apt.scheduled_at), 'EEE', { locale: es })}
+              <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                {upcomingApts.slice(0, 4).map((apt: any) => (
+                  <Link key={apt.id} href={`/appointments/${apt.id}`} className="list-row">
+                    <div className="flex-shrink-0 w-10 text-center">
+                      <div className="text-[10px] uppercase font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                        {isToday(new Date(apt.scheduled_at)) ? 'hoy'
+                          : isTomorrow(new Date(apt.scheduled_at)) ? 'mañ'
+                          : format(new Date(apt.scheduled_at), 'EEE', { locale: es })}
                       </div>
-                      <div className="text-sm font-medium text-slate-700">{format(new Date(apt.scheduled_at), 'd')}</div>
+                      <div className="text-lg font-light" style={{ color: 'var(--text-primary)' }}>
+                        {format(new Date(apt.scheduled_at), 'd')}
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-700 truncate">
+                      <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                         {apt.patient?.first_name} {apt.patient?.last_name}
                       </p>
-                      <p className="text-[11px] text-slate-400">{format(new Date(apt.scheduled_at), 'HH:mm')} hs</p>
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                        {format(new Date(apt.scheduled_at), 'HH:mm')} hs · {apt.modality}
+                      </p>
                     </div>
                     <StatusBadge status={apt.status as AppointmentStatus} />
                   </Link>
@@ -174,34 +288,41 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-800">Últimas notas</h2>
-              <Link href="/notes" className="text-xs text-blue-600 hover:underline">Ver todas</Link>
+          {/* Últimas notas */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Últimas notas</h2>
+              <Link href="/notes" className="text-xs font-medium hover:underline" style={{ color: brandColor }}>
+                Ver todas →
+              </Link>
             </div>
             {!recentNotes?.length ? (
-              <div className="px-5 py-8 text-center text-sm text-slate-400">Sin notas registradas</div>
+              <div className="px-5 py-8 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Sin notas registradas
+              </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
                 {recentNotes.map((note: any) => (
-                  <Link key={note.id} href={`/notes/${note.id}`}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
-                    <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-[11px] font-medium text-blue-600 flex-shrink-0">
+                  <Link key={note.id} href={`/notes/${note.id}`} className="list-row">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
+                      style={{ background: 'var(--epsi-green-pale)', color: brandColor }}>
                       {note.patient?.first_name?.[0]}{note.patient?.last_name?.[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-700 truncate">
+                      <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                         {note.patient?.first_name} {note.patient?.last_name}
                       </p>
-                      <p className="text-[11px] text-slate-400 truncate">
-                        {format(new Date(note.session_date), "d MMM", { locale: es })} · {note.consultation_reason?.slice(0, 40) || 'Sin motivo'}
+                      <p className="text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>
+                        {format(new Date(note.session_date), "d MMM", { locale: es })} · {note.consultation_reason?.slice(0, 35) || 'Sin motivo'}
                       </p>
                     </div>
+                    <ArrowRight size={13} style={{ color: 'var(--text-tertiary)' }} className="flex-shrink-0" />
                   </Link>
                 ))}
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>

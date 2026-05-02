@@ -3,97 +3,154 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Plus, Clock } from 'lucide-react'
+import { Plus, Clock, ChevronRight } from 'lucide-react'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { AppointmentStatus } from '@/types'
-import Empty from '@/components/ui/Empty'
 
 export default async function AppointmentsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: psych } = await supabase.from('psychologists').select('id').eq('user_id', user.id).single()
+  const { data: psych } = await supabase
+    .from('psychologists')
+    .select('id, brand_color')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!psych) redirect('/settings')
 
   const { data: appointments } = await supabase
     .from('appointments')
-    .select('*, patient:patients(first_name, last_name, email)')
-    .eq('psychologist_id', psych?.id)
+    .select('id, scheduled_at, duration_minutes, modality, status, is_recurring, patient:patients(first_name, last_name)')
+    .eq('psychologist_id', psych.id)
     .not('status', 'in', '("cancelled_by_patient","cancelled_by_psychologist")')
     .order('scheduled_at', { ascending: true })
+    .limit(100)
 
   const now = new Date()
   const upcoming = appointments?.filter(a => new Date(a.scheduled_at) >= now) || []
   const past = appointments?.filter(a => new Date(a.scheduled_at) < now) || []
+  const pending = upcoming.filter(a => a.status === 'pending_confirmation')
+  const brandColor = psych.brand_color || '#2d5016'
 
   return (
-    <div className="p-8 animate-fade-in max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 animate-fade-in" style={{ maxWidth: 900 }}>
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl text-slate-800">Turnos</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{upcoming.length} próximos · {past.length} pasados</p>
+          <h1 className="page-title">Turnos</h1>
+          <p className="page-subtitle">{upcoming.length} próximos · {past.length} realizados</p>
         </div>
-        <Link href="/appointments/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+        <Link href="/appointments/new" className="btn-primary">
           <Plus size={14} /> Nuevo turno
         </Link>
       </div>
 
-      {/* Pending alert */}
-      {appointments?.some(a => a.status === 'pending_confirmation') && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5 text-sm text-amber-800">
-          ⚠️ Hay turnos pendientes de confirmación. Revisá los estados a continuación.
+      {/* Alerta pendientes */}
+      {pending.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border mb-6"
+          style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+          <Clock size={15} style={{ color: '#d97706' }} />
+          <p className="text-sm" style={{ color: '#92400e' }}>
+            <strong>{pending.length}</strong> turno{pending.length !== 1 ? 's' : ''} esperando confirmación del paciente
+          </p>
         </div>
       )}
 
       {!appointments?.length ? (
-        <div className="bg-white border border-slate-200 rounded-xl">
-          <Empty icon={<Clock size={36} />} title="Sin turnos" description="Creá el primer turno para comenzar."
-            action={<Link href="/appointments/new" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Nuevo turno</Link>} />
+        <div className="card py-16 text-center">
+          <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center"
+            style={{ background: 'var(--surface-raised)' }}>
+            <Clock size={24} style={{ color: 'var(--text-tertiary)' }} />
+          </div>
+          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Sin turnos aún</p>
+          <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>Creá el primer turno para comenzar</p>
+          <Link href="/appointments/new" className="btn-primary" style={{ display: 'inline-flex' }}>
+            <Plus size={14} /> Nuevo turno
+          </Link>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
+
+          {/* Próximos */}
           {upcoming.length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Próximos</h2>
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+              <div className="flex items-center gap-3 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                  Próximos
+                </h2>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ background: 'var(--epsi-green-pale)', color: brandColor }}>
+                  {upcoming.length}
+                </span>
+              </div>
+              <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
                 {upcoming.map((apt: any) => (
-                  <Link key={apt.id} href={`/appointments/${apt.id}`}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors group">
-                    <div className="text-center w-12 flex-shrink-0">
-                      <div className="text-[10px] text-slate-400 uppercase capitalize">
+                  <Link key={apt.id} href={`/appointments/${apt.id}`} className="list-row group">
+                    {/* Fecha */}
+                    <div className="flex-shrink-0 w-14 text-center">
+                      <div className="text-[10px] font-semibold uppercase"
+                        style={{ color: 'var(--text-tertiary)' }}>
                         {format(new Date(apt.scheduled_at), 'EEE', { locale: es })}
                       </div>
-                      <div className="text-lg font-light text-slate-700">{format(new Date(apt.scheduled_at), 'd')}</div>
-                      <div className="text-[10px] text-slate-400 capitalize">
+                      <div className="text-xl font-light" style={{ color: 'var(--text-primary)' }}>
+                        {format(new Date(apt.scheduled_at), 'd')}
+                      </div>
+                      <div className="text-[10px] capitalize" style={{ color: 'var(--text-tertiary)' }}>
                         {format(new Date(apt.scheduled_at), 'MMM', { locale: es })}
                       </div>
                     </div>
-                    <div className="w-px h-10 bg-slate-200 flex-shrink-0" />
+                    {/* Separador */}
+                    <div className="w-px h-10 flex-shrink-0" style={{ background: 'var(--border)' }} />
+                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">
-                        {apt.patient?.first_name} {apt.patient?.last_name}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold truncate transition-colors"
+                          style={{ color: 'var(--text-primary)' }}>
+                          {apt.patient?.first_name} {apt.patient?.last_name}
+                        </p>
+                        {apt.is_recurring && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                            style={{ background: '#ede9fe', color: '#6d28d9' }}>
+                            recurrente
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                         {format(new Date(apt.scheduled_at), "HH:mm 'hs'")} · {apt.duration_minutes} min · {apt.modality}
                       </p>
                     </div>
                     <StatusBadge status={apt.status as AppointmentStatus} />
+                    <ChevronRight size={14} style={{ color: 'var(--text-tertiary)' }} className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Pasados */}
           {past.length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Pasados</h2>
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-                {past.slice(0, 10).map((apt: any) => (
-                  <Link key={apt.id} href={`/appointments/${apt.id}`}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors opacity-75 hover:opacity-100">
+              <div className="flex items-center gap-3 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                  Realizados
+                </h2>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ background: 'var(--surface-raised)', color: 'var(--text-tertiary)', border: '1px solid var(--border)' }}>
+                  {past.length}
+                </span>
+              </div>
+              <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
+                {past.slice(0, 15).map((apt: any) => (
+                  <Link key={apt.id} href={`/appointments/${apt.id}`} className="list-row"
+                    style={{ opacity: 0.65 }}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700">{apt.patient?.first_name} {apt.patient?.last_name}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {apt.patient?.first_name} {apt.patient?.last_name}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                         {format(new Date(apt.scheduled_at), "d MMM yyyy · HH:mm 'hs'", { locale: es })} · {apt.modality}
                       </p>
                     </div>
