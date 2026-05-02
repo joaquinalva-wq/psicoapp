@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 import {
   LayoutDashboard, CalendarDays, Users, Clock, FileText,
-  XCircle, BarChart2, Settings, LogOut
+  XCircle, BarChart2, Settings, LogOut, ExternalLink
 } from 'lucide-react'
 
 const NAV = [
@@ -57,65 +57,133 @@ export default function Sidebar() {
   const brandColor = psych?.brand_color || '#2d5016'
 
   return (
-    <aside className="w-[210px] min-h-screen bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
+    <aside style={{
+      width: 220,
+      minHeight: '100vh',
+      background: 'var(--surface)',
+      borderRight: '1px solid var(--border)',
+      display: 'flex',
+      flexDirection: 'column',
+      flexShrink: 0,
+    }}>
 
-      {/* Header EPSI */}
-      <div className="px-4 py-4 border-b border-slate-100">
-        <Link href="/" className="flex items-center gap-2.5 mb-3">
-          {/* Logo sobre fondo blanco: sin filtro, con mix-blend-mode multiply
-              para que el fondo blanco del JPG sea transparente visualmente */}
-          <img
-            src="/epsi-logo.jpg"
-            alt="EPSI"
-            className="h-8 w-auto"
-            style={{ mixBlendMode: 'multiply' }}
-          />
+      {/* ── Logo EPSI ── */}
+      <div style={{
+        padding: '20px 16px 16px',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <Link href="/" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          textDecoration: 'none',
+          marginBottom: 14,
+        }}>
+          <div style={{
+            width: 34,
+            height: 34,
+            borderRadius: 8,
+            overflow: 'hidden',
+            flexShrink: 0,
+            border: '1px solid var(--border)',
+            background: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <img
+              src="/epsi-logo.jpg"
+              alt="EPSI"
+              style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }}
+            />
+          </div>
           <div>
-            <div className="text-xs font-bold text-slate-800 leading-none">EPSI</div>
-            <div className="text-[10px] text-slate-400">Esp. Psicológico Integral</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1 }}>
+              EPSI
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 2 }}>
+              Esp. Psicológico Integral
+            </div>
           </div>
         </Link>
 
-        {/* Profesional logueado */}
+        {/* Profesional */}
         {psych && (
-          <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-2">
-            {psych.logo_url
-              ? <img src={psych.logo_url} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              : (
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                  style={{ background: brandColor }}
-                >
-                  {psych.full_name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
-                </div>
-              )
-            }
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-slate-700 truncate">{psych.full_name}</p>
-              <p className="text-[10px] text-slate-400 truncate">{psych.profession || 'Profesional'}</p>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'var(--surface-raised)',
+            borderRadius: 10,
+            padding: '8px 10px',
+          }}>
+            {psych.logo_url ? (
+              <img src={psych.logo_url} alt=""
+                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            ) : (
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: brandColor,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 700, color: 'white', flexShrink: 0,
+              }}>
+                {psych.full_name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
+              </div>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {psych.full_name}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {psych.profession || 'Profesional'}
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Navegación */}
-      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-4">
+      {/* ── Navegación ── */}
+      <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
         {NAV.map(group => (
-          <div key={group.section}>
-            <p className="px-3 mb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+          <div key={group.section} style={{ marginBottom: 20 }}>
+            <div style={{
+              fontSize: 10, fontWeight: 600, color: 'var(--text-tertiary)',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              padding: '0 10px', marginBottom: 4,
+            }}>
               {group.section}
-            </p>
-            <div className="space-y-0.5">
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {group.items.map(({ href, label, icon: Icon }) => {
                 const active = isActive(href)
                 return (
-                  <Link key={href} href={href}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors ${
-                      active ? 'font-medium text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
-                    }`}
-                    style={active ? { background: brandColor } : {}}
+                  <Link key={href} href={href} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 9,
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: active ? 500 : 400,
+                    color: active ? 'white' : 'var(--text-secondary)',
+                    background: active ? brandColor : 'transparent',
+                    textDecoration: 'none',
+                    transition: 'background 0.12s, color 0.12s',
+                  }}
+                    onMouseEnter={e => {
+                      if (!active) {
+                        (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'
+                        ;(e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!active) {
+                        (e.currentTarget as HTMLElement).style.background = 'transparent'
+                        ;(e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'
+                      }
+                    }}
                   >
-                    <Icon size={14} className="flex-shrink-0" />
+                    <Icon size={14} style={{ flexShrink: 0 }} />
                     {label}
                   </Link>
                 )
@@ -125,16 +193,59 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-2 py-3 border-t border-slate-100 space-y-1">
-        <Link href="/turnos" target="_blank"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium text-white transition-opacity hover:opacity-90"
-          style={{ background: brandColor }}>
-          🌐 Ver portal EPSI
+      {/* ── Footer ── */}
+      <div style={{
+        padding: '10px 8px 14px',
+        borderTop: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+      }}>
+        <Link href="/turnos" target="_blank" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 10px',
+          borderRadius: 8,
+          fontSize: 12,
+          fontWeight: 500,
+          color: 'white',
+          background: brandColor,
+          textDecoration: 'none',
+          transition: 'opacity 0.15s',
+        }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.88'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+        >
+          <ExternalLink size={13} style={{ flexShrink: 0 }} />
+          Ver portal EPSI
         </Link>
-        <button onClick={handleLogout}
-          className="flex items-center gap-2.5 px-3 py-2 w-full rounded-lg text-[13px] text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors">
-          <LogOut size={14} /> Cerrar sesión
+        <button onClick={handleLogout} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 10px',
+          borderRadius: 8,
+          fontSize: 13,
+          color: 'var(--text-tertiary)',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          width: '100%',
+          transition: 'background 0.12s, color 0.12s',
+          textAlign: 'left',
+        }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'
+            ;(e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background = 'transparent'
+            ;(e.currentTarget as HTMLElement).style.color = 'var(--text-tertiary)'
+          }}
+        >
+          <LogOut size={14} style={{ flexShrink: 0 }} />
+          Cerrar sesión
         </button>
       </div>
     </aside>
