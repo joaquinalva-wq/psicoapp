@@ -4,9 +4,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { Brain } from 'lucide-react'
-
-export const dynamic = 'force-dynamic'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -29,34 +26,80 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm animate-slide-up">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Brain size={24} className="text-white" />
-          </div>
-          <h1 className="text-3xl text-slate-800">PsicoApp</h1>
-          <p className="text-slate-400 text-sm mt-1">Gestión de consulta profesional</p>
+    <div className="min-h-screen flex" style={{ background: '#f0f4ec' }}>
+      {/* Panel izquierdo — branding */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12"
+        style={{ background: 'linear-gradient(135deg, #2d5016 0%, #3d6b1e 100%)' }}>
+        <img src="/epsi-logo.png" alt="EPSI" className="w-36 h-auto mb-6"
+          style={{ filter: 'brightness(0) invert(1)' }} />
+        <h1 className="text-3xl text-white text-center mb-3"
+          style={{ fontFamily: 'DM Serif Display, Georgia, serif' }}>
+          Espacio Psicológico Integral
+        </h1>
+        <p className="text-green-200 text-center text-sm leading-relaxed max-w-xs">
+          Sistema de gestión clínica para los profesionales de EPSI Campana
+        </p>
+        <div className="mt-12 space-y-3 w-full max-w-xs">
+          {[
+            'Gestión de turnos y pacientes',
+            'Historias clínicas completas',
+            'Notas de sesión con logo EPSI',
+            'Portal público de reservas',
+          ].map(f => (
+            <div key={f} className="flex items-center gap-3 text-green-100 text-sm">
+              <div className="w-5 h-5 rounded-full bg-green-400 bg-opacity-30 flex items-center justify-center flex-shrink-0">
+                <span className="text-[10px]">✓</span>
+              </div>
+              {f}
+            </div>
+          ))}
         </div>
+      </div>
 
-        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@email.com" />
+      {/* Panel derecho — formulario */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden mb-8 text-center">
+            <img src="/epsi-logo.png" alt="EPSI" className="h-16 w-auto mx-auto mb-3" />
+            <p className="text-slate-500 text-sm">Espacio Psicológico Integral</p>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-800 mb-1">Bienvenido/a</h2>
+            <p className="text-sm text-slate-400 mb-6">Ingresá con tu cuenta de EPSI</p>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Email</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="tu@email.com" required autoFocus />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Contraseña</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••" required />
+              </div>
+              <button type="submit" disabled={loading}
+                className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-opacity disabled:opacity-50 mt-2"
+                style={{ background: '#2d5016' }}>
+                {loading ? 'Ingresando...' : 'Ingresar al sistema'}
+              </button>
+            </form>
+
+            <div className="mt-5 pt-5 border-t border-slate-100 text-center">
+              <p className="text-xs text-slate-400">
+                ¿Primera vez?{' '}
+                <Link href="/register" className="font-medium hover:underline" style={{ color: '#2d5016' }}>
+                  Crear cuenta
+                </Link>
+              </p>
+            </div>
           </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors mt-2">
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
-          <p className="text-center text-sm text-slate-500 pt-1">
-            ¿No tenés cuenta?{' '}
-            <Link href="/register" className="text-blue-600 hover:underline font-medium">Registrate</Link>
+
+          <p className="text-center text-xs text-slate-400 mt-6">
+            <Link href="/turnos" className="hover:underline">← Volver al portal de turnos</Link>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   )

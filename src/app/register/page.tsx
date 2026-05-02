@@ -4,9 +4,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { Brain } from 'lucide-react'
-
-export const dynamic = 'force-dynamic'
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
@@ -18,52 +15,72 @@ export default function RegisterPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    if (password.length < 8) { toast.error('La contraseña debe tener al menos 8 caracteres'); return }
+    if (password.length < 6) { toast.error('La contraseña debe tener al menos 6 caracteres'); return }
     setLoading(true)
     const { error } = await supabase.auth.signUp({
-      email, password,
+      email,
+      password,
       options: { data: { full_name: fullName } }
     })
-    if (error) { toast.error(error.message); setLoading(false) }
-    else {
-      toast.success('Cuenta creada. ¡Ya podés iniciar sesión!')
-      router.push('/login')
+    if (error) {
+      toast.error(error.message)
+      setLoading(false)
+    } else {
+      toast.success('¡Cuenta creada! Iniciando sesión...')
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+      if (!loginError) { router.push('/dashboard'); router.refresh() }
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm animate-slide-up">
+    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: '#f0f4ec' }}>
+      <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Brain size={24} className="text-white" />
-          </div>
-          <h1 className="text-3xl text-slate-800">PsicoApp</h1>
-          <p className="text-slate-400 text-sm mt-1">Creá tu cuenta profesional</p>
+          <img src="/epsi-logo.png" alt="EPSI" className="h-16 w-auto mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">Espacio Psicológico Integral</p>
         </div>
 
-        <form onSubmit={handleRegister} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Nombre completo</label>
-            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required placeholder="Dra. Laura Martínez" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-800 mb-1">Crear cuenta</h2>
+          <p className="text-sm text-slate-400 mb-6">Registrate como profesional de EPSI</p>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Nombre completo *</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)}
+                placeholder="Dra. Laura Martínez" required autoFocus />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Email *</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="tu@email.com" required />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Contraseña *</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres" required />
+            </div>
+            <button type="submit" disabled={loading}
+              className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-opacity disabled:opacity-50 mt-2"
+              style={{ background: '#2d5016' }}>
+              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+            </button>
+          </form>
+
+          <div className="mt-5 pt-5 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-400">
+              ¿Ya tenés cuenta?{' '}
+              <Link href="/login" className="font-medium hover:underline" style={{ color: '#2d5016' }}>
+                Ingresá
+              </Link>
+            </p>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@email.com" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Mínimo 8 caracteres" />
-          </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors mt-2">
-            {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-          </button>
-          <p className="text-center text-sm text-slate-500 pt-1">
-            ¿Ya tenés cuenta?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">Ingresá</Link>
-          </p>
-        </form>
+        </div>
+
+        <p className="text-center text-xs text-slate-400 mt-6">
+          <Link href="/turnos" className="hover:underline">← Volver al portal de turnos</Link>
+        </p>
       </div>
     </div>
   )
