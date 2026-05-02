@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, User, Calendar, Edit } from 'lucide-react'
 import NoteExportButton from '@/components/notes/NoteExportButton'
+import NoteAttachments from '@/components/notes/NoteAttachments'
 import { fullDateAR, formatAR } from '@/lib/dates'
 
 export default async function NoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,11 +30,11 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ id:
   const brandColor = psych.brand_color || '#2d5016'
 
   const sections = [
-    { label: 'Motivo de consulta',      value: note.consultation_reason },
-    { label: 'Desarrollo de la sesión', value: note.development },
+    { label: 'Motivo de consulta',       value: note.consultation_reason },
+    { label: 'Desarrollo de la sesión',  value: note.development },
     { label: 'Intervenciones realizadas', value: note.interventions },
-    { label: 'Observaciones clínicas',  value: note.observations },
-    { label: 'Próximos pasos',          value: note.next_steps },
+    { label: 'Observaciones clínicas',   value: note.observations },
+    { label: 'Próximos pasos',           value: note.next_steps },
   ].filter(s => s.value)
 
   return (
@@ -63,7 +64,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ id:
         borderRadius: 12, padding: '12px 20px', marginBottom: 20,
         fontSize: 13,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <User size={13} style={{ color: 'var(--text-tertiary)' }} />
           <Link href={`/patients/${note.patient_id}`}
             style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none' }}>
@@ -73,7 +74,6 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ id:
         <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--text-secondary)' }}>
           <Calendar size={13} style={{ color: 'var(--text-tertiary)' }} />
-          {/* Fix timezone: T12:00:00 evita desfase UTC */}
           <span style={{ textTransform: 'capitalize' }}>
             {fullDateAR(note.session_date + 'T12:00:00')}
           </span>
@@ -88,7 +88,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ id:
         overflow: 'hidden',
         boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
       }}>
-        {/* Header ficha — verde EPSI */}
+        {/* Header ficha */}
         <div style={{
           padding: '24px 32px',
           background: `linear-gradient(135deg, ${brandColor} 0%, #3d6b1e 100%)`,
@@ -119,12 +119,12 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Secciones */}
-        <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ padding: '24px 32px' }}>
           {sections.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', padding: '32px 0' }}>
               Sin contenido registrado
             </p>
-          ) : sections.map((s, i) => (
+          ) : sections.map(s => (
             <div key={s.label} className="note-preview-section">
               <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
                 {s.label}
@@ -147,6 +147,14 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ id:
           </p>
         </div>
       </div>
+
+      {/* Archivos adjuntos */}
+      <NoteAttachments
+        noteId={note.id}
+        psychologistId={psych.id}
+        patientId={note.patient_id}
+      />
+
     </div>
   )
 }
